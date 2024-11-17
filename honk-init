@@ -1,8 +1,7 @@
 #!/bin/bash
 
-exec 3>/tmp/honk-init.log
 usage(){
-    echo "$@" >&3
+    echo "$@" >&2
 	echo "honk-init port" >&2
 	exit 1
 }
@@ -28,21 +27,13 @@ if ! [[ -d "$datadir" ]]; then
     mkdir -p "$datadir" || exit 1
     cd "$datadir" || exit 1
 
-    #use | instead of <<
+    uname="bikalpa$port"
+    pw="$uname"
+    listen="127.0.0.1:$port"
+    domain="bikalpa$port.ashwink.com.np"
 
-    printf "%s\n" \
-	   "bikalpa$port" \
-	   "bikalpa$port" \
-	   "127.0.0.1:$port" \
-	   "bikalpa$port.ashwink.com.np" |
+    printf "%s\n" "$uname" "$pw" "$listen" "$domain" |
 	honk init "$@" || exit 1
-
-    # honk init "$@" <<End || exit 1
-# bikalpa$port
-# bikalpa$port
-# 127.0.0.1:$port
-# bikalpa$port.ashwink.com.np
-# End
 fi
 
 cd "$datadir" || exit 1
