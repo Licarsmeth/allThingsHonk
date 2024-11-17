@@ -1,0 +1,39 @@
+#!/bin/bash
+
+usage(){
+    echo "$@" >&2
+	echo "honk-init port" >&2
+	exit 1
+}
+
+if [[ $# != 1 ]]; then
+    usage "not enough args"
+fi
+shopt -s extglob
+case $1 in
+    [0-9][0-9][0-9][0-9])
+	port=$1
+	shift
+    ;;
+    *)
+	usage "arg must be all digits"
+	;;
+esac
+
+datadir="$HOME/honk/$port"
+viewdir="$HOME/honk-0.9.8"
+
+if ! [[ -d "$datadir" ]]; then
+    mkdir -p "$datadir" || exit 1
+    cd "$datadir" || exit 1
+
+    honk init "$@" <<End || exit 1
+bikalpa$port
+bikalpa$port
+127.0.0.1:$port
+bikalpa$port.ashwink.com.np
+End
+fi
+
+cd "$datadir" || exit 1
+honk --viewdir="$viewdir" "$@"
