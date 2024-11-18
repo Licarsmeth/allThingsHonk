@@ -1,0 +1,21 @@
+#!/bin/bash
+usage(){
+    cat >&2
+}<<EOF
+honk-aggressively port
+EOF
+uname=bikalpa5000
+pw=$uname
+domain="https://$uname.ashwink.com.np"
+cookie="honk-$uname.txt"
+curl=(curl -b "$cookie" -c "$cookie")
+
+if ! [[ -f "$cookie" ]]; then
+    "${curl[@]}" -d "username=$uname" -d "password=$pw" "$domain/dologin"
+fi
+
+set -x
+
+csrf=$("${curl[@]}" "$domain/" | awk -F\" '/csrftoken =/{ print $2; }')
+
+"${curl[@]}" -d "CSRF=$csrf" -d "noise=don't forget to honk your junk again!!!" "$domain/honk"
