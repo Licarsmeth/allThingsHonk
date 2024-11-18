@@ -1,21 +1,44 @@
 #!/bin/bash
 usage(){
     cat >&2
+    exit 1
 }<<EOF
-honk-aggressively port
+honk-aggressively _port_ [attached-file]
+the text is read from stdin.
+hostname is https://bikalpa$port.ashwink.com.np
 EOF
-uname=bikalpa5000
+
+if (( $# < 1 )); then
+    usage
+fi
+
+file=""
+case $# in
+    2)
+	file=$2
+	port=$1
+	;;
+    1)
+	port=$1
+	;;
+esac
+
+uname=bikalpa$port
+shift
 pw=$uname
 domain="https://$uname.ashwink.com.np"
 cookie="honk-$uname.txt"
-curl=(curl -b "$cookie" -c "$cookie")
+curl=(curl -f -b "$cookie" -c "$cookie")
 
 if ! [[ -f "$cookie" ]]; then
     "${curl[@]}" -d "username=$uname" -d "password=$pw" "$domain/dologin"
 fi
 
-set -x
-
 csrf=$("${curl[@]}" "$domain/" | awk -F\" '/csrftoken =/{ print $2; }')
 
-"${curl[@]}" -d "CSRF=$csrf" -d "noise=don't forget to honk your junk again!!!" "$domain/honk"
+if [[ $file ]]; then
+    curl=("${curl[@]}" -F "donk=@$file")
+fi
+
+printf '%s\n' 'honk:' >&2
+"${curl[@]}" -F "CSRF=$csrf" -F "noise=<-" "$domain/honk"
