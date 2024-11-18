@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#up, down, random, specific
+set -x
+
 usage(){
     echo "$@" >&2
 	echo "honk-init port" >&2
@@ -9,6 +12,7 @@ usage(){
 if [[ $# != 1 ]]; then
     usage "not enough args"
 fi
+
 # shopt -s extglob
 case $1 in
     [0-9][0-9][0-9][0-9])
@@ -22,8 +26,13 @@ esac
 
 datadir="$HOME/honk/$port"
 viewdir="$HOME/honk-0.9.8"
-
 if ! [[ -d "$datadir" ]]; then
+	init
+fi
+cd "$datadir" || exit 1
+honkPid="$(lsof -i "@0.0.0.0:$port" | awk 'NR==2 {print $2}')"
+
+init(){
     mkdir -p "$datadir" || exit 1
     cd "$datadir" || exit 1
 
@@ -34,8 +43,19 @@ if ! [[ -d "$datadir" ]]; then
 
     printf "%s\n" "$uname" "$pw" "$listen" "$domain" |
 	honk init "$@" || exit 1
-fi
+}
 
-cd "$datadir" || exit 1
-honk --viewdir="$viewdir" "$@" &
-echo "$!" > honk.pid
+up(){
+    honk --viewdir="$viewdir" "$@" &
+    echo "$!" > honk.pid
+}
+
+down() {
+kill -SIGINT "$honkPid"
+}
+
+forceDown() {
+ kill -SIGKILL "$honkPid"
+}
+
+down "$@"
