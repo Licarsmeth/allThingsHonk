@@ -9,7 +9,7 @@ usage(){
 	exit 1
 }
 
-if [[ $# != 1 ]]; then
+if [[ $# < 2 ]]; then
     usage "not enough args"
 fi
 
@@ -47,7 +47,6 @@ init(){
 
 up(){
     honk --viewdir="$viewdir" "$@" &
-    echo "$!" > honk.pid
 }
 
 down() {
@@ -58,4 +57,21 @@ forceDown() {
  kill -SIGKILL "$honkPid"
 }
 
-down "$@"
+task=$1
+shift
+
+case $task in
+    up)
+        up "$@"
+        ;;
+    down)
+        down "$@"
+        ;;
+    forceDown)
+	forceDown "$@"
+	;;
+    *)
+        echo "Invalid option.Try up, down or forceDown"
+        ;;
+esac
+
