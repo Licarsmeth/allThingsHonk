@@ -5,11 +5,11 @@ set -x
 
 usage(){
     echo "$@" >&2
-	echo "honk-init port" >&2
+	echo "honk-init port service" >&2
 	exit 1
 }
 
-if [[ $# < 2 ]]; then
+if (( $# < 2 )); then
     usage "not enough args"
 fi
 
@@ -42,11 +42,11 @@ init(){
     domain="bikalpa$port.ashwink.com.np"
 
     printf "%s\n" "$uname" "$pw" "$listen" "$domain" |
-	honk init "$@" || exit 1
+	honk init || exit 1
 }
 
 up(){
-    honk --viewdir="$viewdir" "$@" &
+    honk --viewdir="$viewdir" &
 }
 
 down() {
@@ -57,18 +57,36 @@ forceDown() {
  kill -SIGKILL "$honkPid"
 }
 
+specific(){
+    time=$1
+    down
+    sleep "$time"
+    up
+}
+
+random(){
+   rand=$((1 + RANDOM % 10))
+   specific $rand
+}
+
 task=$1
 shift
 
 case $task in
     up)
-        up "$@"
+        up
         ;;
     down)
-        down "$@"
+        down
         ;;
     forceDown)
-	forceDown "$@"
+	forceDown
+	;;
+    specific)
+	specific "$@"
+	;;
+    random)
+	random
 	;;
     *)
         echo "Invalid option.Try up, down or forceDown"
