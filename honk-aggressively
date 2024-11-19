@@ -19,7 +19,10 @@ get_csrf(){
     "${curl[@]}" "$domain/" > "$tmpfile" || die "couldn't connect"
     csrf=$(awk  -F'"' 'BEGIN{ e = 1 } /csrftoken =/{ print $2; e = 0} END { exit e }' "$tmpfile")
 }
-
+lorem(){
+    chars=$(( RANDOM % 1000 ))
+    LC_ALL=C grep -"m$chars" -aEo '[[:alnum:]]' /dev/urandom | tr -d '\n' | paste -s
+}
 if (( $# < 1 )); then
     usage
 fi
@@ -57,8 +60,7 @@ if [[ $file ]]; then
     curl=("${curl[@]}" -F "donk=@$file")
 fi
 
-printf '%s\n' 'honk:' >&2
-"${curl[@]}" -iF "CSRF=$csrf" -F "noise=<-" "$domain/honk" > "$tmpfile"
+lorem | "${curl[@]}" -iF "CSRF=$csrf" -F "noise=<-" "$domain/honk" > "$tmpfile"
 status=$?
 
 if head -n1 "$tmpfile" | grep -qF 'HTTP/1.1 303 See Other'; then
