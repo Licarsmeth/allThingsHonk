@@ -26,11 +26,6 @@ esac
 
 datadir="$HOME/honk/$port"
 viewdir="$HOME/honk-0.9.8"
-if ! [[ -d "$datadir" ]]; then
-	init
-fi
-cd "$datadir" || exit 1
-honkPid="$(lsof -i "@0.0.0.0:$port" | awk 'NR==2 {print $2}')"
 
 init(){
     mkdir -p "$datadir" || exit 1
@@ -68,6 +63,13 @@ random(){
    rand=$((1 + RANDOM % 10))
    specific $rand
 }
+
+if ! [[ -d "$datadir" ]]; then
+	init
+fi
+
+cd "$datadir" || exit 1
+honkPid="$(lsof -i "@0.0.0.0:$port" | awk 'NR==2 {print $2}')"
 
 task=$1
 shift
