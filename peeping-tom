@@ -1,0 +1,50 @@
+#!/bin/bash
+#set -x
+
+#watch honk.db every 5 sec
+#run commands to get tries,total, rcpt, total
+#create a db in each sent folder
+#store tries, total, rcpt, date
+
+usage(){
+    echo "$@" >&2
+	exit 1
+}
+
+# Define the directories for the two Honk instances
+dir1="$HOME/honk/5001"
+dir2="$HOME/honk/5002"
+
+# Function to query the SQLite database
+query_tries_db() {
+    local dir=$1
+    local db_file="$dir/honk.db"
+
+    if [[ -f "$db_file" ]]; then
+        sqlite3 "$db_file" ".headers on" "select datetime('now') as current_dt, tries, count (*) as count from doovers group by tries"
+    else
+        echo "Database file not found in $dir"
+    fi
+}
+
+query_rcpt_db() {
+    local dir=$1
+    local db_file="$dir/honk.db"
+
+    if [[ -f "$db_file" ]]; then
+        sqlite3 "$db_file" ".headers on" "select datetime('now') as current_dt, rcpt, count (*) as count from doovers group by rcpt"
+    else
+        echo "Database file not found in $dir"
+    fi
+}
+
+triesdb=$(query_tries_db "$dir1")
+rcptdb=$(query_rcpt_db "$dir1")
+
+# Output the results
+echo "Results of tries:"
+echo "$triesdb"
+echo "--------------------"
+echo "Results of rcpts:"
+echo "$rcptdb"
+echo " "
