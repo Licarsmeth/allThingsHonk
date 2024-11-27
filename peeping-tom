@@ -1,27 +1,54 @@
 #!/bin/bash
 #set -x
 
-#watch honk.db every 5 sec
 #run commands to get tries,total, rcpt, total
 #create a db in each sent folder
 #store tries, total, rcpt, date
 
 usage(){
-    echo "$@" >&2
-	exit 1
+    cat >&2
+    exit 1
+}<<EOF
+peeping-tom 
+EOF
+
+die(){
+    printf '%s\n' "$*" >&2
+    exit 1
 }
 
 # Define the directories for the two Honk instances
 dir1="$HOME/honk/5001"
-dir2="$HOME/honk/5002"
+cd "$dir1" || die "couldn't go to 5001"
 
-# Function to query the SQLite database
+query_runs_db() {
+    local db_file="$dir1/runs.db"
+    local table_name="runs"
+
+    if [ ! -f "$db_file" ]; then
+    touch "$db_file"
+    sqlite3 "$db_file" "CREATE TABLE $table_name (id INTEGER PRIMARY KEY AUTOINCREMENT, bla INT);"
+    fi
+
+   current_run=$(sqlite3 "$db_file" "insert into $table_name (bla) values (2) returning id;")
+
+}
+
 query_tries_db() {
     local dir=$1
     local db_file="$dir/honk.db"
+    local query_db_file="$dir/query.db"
 
     if [[ -f "$db_file" ]]; then
-        sqlite3 "$db_file" ".headers on" "select datetime('now') as current_dt, tries, count (*) as count from doovers group by tries"
+        result=$(sqlite3 "$db_file" "SELECT datetime('now') AS current_dt, tries, COUNT(*) AS count FROM doovers GROUP BY tries;")
+
+        if [[ ! -f "$query_db_file" ]]; then
+            sqlite3 "$query_db_file" "CREATE TABLE results (current_dt TEXT, runs INT, tries INT, count INT);"
+        fi
+        echo "$result" | while
+	    IFS='|' read -r current_dt tries count; do
+	    sqlite3 "$query_db_file" "INSERT INTO results (current_dt,runs, tries, count) VALUES ('$current_dt',$current_run, $tries, $count);"
+	done
     else
         echo "Database file not found in $dir"
     fi
@@ -30,21 +57,21 @@ query_tries_db() {
 query_rcpt_db() {
     local dir=$1
     local db_file="$dir/honk.db"
+    local rcpt_db_file="$dir/rcpt.db"
 
     if [[ -f "$db_file" ]]; then
-        sqlite3 "$db_file" ".headers on" "select datetime('now') as current_dt, rcpt, count (*) as count from doovers group by rcpt"
+        result=$(sqlite3 "$db_file" "SELECT datetime('now') AS current_dt, tries, COUNT(*) AS count FROM doovers GROUP BY tries;")
+
+        if [[ ! -f "$rcpt_db_file" ]]; then
+            sqlite3 "$rcpt_db_file" "CREATE TABLE results (current_dt TEXT, runs INT, tries INT, count INT);"
+        fi
+        echo "$result" | while IFS='|' read -r current_dt tries count; do
+	sqlite3 "$rcpt_db_file" "INSERT INTO results (current_dt,runs, tries, count) VALUES ('$current_dt', $current_run, $tries, $count);"
+	done
     else
         echo "Database file not found in $dir"
     fi
 }
-
-triesdb=$(query_tries_db "$dir1")
-rcptdb=$(query_rcpt_db "$dir1")
-
-# Output the results
-echo "Results of tries:"
-echo "$triesdb"
-echo "--------------------"
-echo "Results of rcpts:"
-echo "$rcptdb"
-echo " "
+query_runs_db
+query_tries_db "$dir1"
+query_rcpt_db "$dir1"
