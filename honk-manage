@@ -18,8 +18,14 @@ init(){
     domain="bikalpa$port.ashwink.com.np"
 
     printf "%s\n" "$uname" "$pw" "$listen" "$domain" |
-    honk init || exit 1
-    honk-subscribe
+	honk init || exit 1
+    up
+    cd ../
+    for i in */; do
+	pp="${i%/}"
+	[[ $pp == $port ]] && continue
+	./honk-aggressively "$port" subscribe "$pp"
+    done
 }
 
 up(){
