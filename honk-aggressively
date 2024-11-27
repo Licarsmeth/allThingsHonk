@@ -35,9 +35,12 @@ lorem(){
 
 subscribe() {
     get_csrf "/honkers"
-    honker=bikalpa$1
-    url="https://$honker.ashwink.com.np/u/$honker"
-    "${curl[@]}" -iF "url=$url" "$domain/submithonker"
+    for i; do
+	[[ i == $port ]] && continue
+	honker=bikalpa$i
+	url="https://$honker.ashwink.com.np/u/$honker"
+	"${curl[@]}" -iF "url=$url" "$domain/submithonker"
+    done
 }
 
 bark(){
@@ -85,7 +88,6 @@ case $1 in
 	bark
 	;;
     subscribe)
-	honker=$2; shift
-	subscribe "$honker"
+	subscribe "$@"
 	;;
 esac

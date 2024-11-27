@@ -21,11 +21,8 @@ init(){
 	honk init || exit 1
     up
     cd ../
-    for i in */; do
-	pp="${i%/}"
-	[[ $pp == $port ]] && continue
-	./honk-aggressively "$port" subscribe "$pp"
-    done
+    mapfile -t list < <(printf '%s\n' */ | sed 's,/$,,g')
+    honk-aggressively "$port" subscribe "${list[@]}"
 }
 
 up(){
