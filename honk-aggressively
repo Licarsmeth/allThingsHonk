@@ -3,7 +3,7 @@ usage(){
     cat >&2
     exit 1
 }<<\EOF
-honk-aggressively _port_ [attached-file]
+honk-aggressively port action
 the text is read from stdin.
 hostname is https://bikalpa$port.ashwink.com.np
 EOF
@@ -12,61 +12,80 @@ die(){
     printf "%s\n" "$@" >&2
     exit 1
 }
+
 login(){
     "${curl[@]}" -d "username=$uname" -d "password=$pw" "$domain/dologin" > "$tmpfile" || die "couldn't login"
 }
+
 get_csrf(){
-    "${curl[@]}" "$domain/" > "$tmpfile" || die "couldn't connect"
-    csrf=$(awk  -F'"' 'BEGIN{ e = 1 } /csrftoken =/{ print $2; e = 0} END { exit e }' "$tmpfile")
+    login
+    "${curl[@]}" -i "$domain$1" > "$tmpfile" || die "couldn't connect"
+    csrf=$(
+	awk  -F'"' 'BEGIN{e=1}
+/<input type="hidden" name="CSRF"/{ print $6; e=0; exit}
+END { exit e }' "$tmpfile"
+	) || die "couldn't get csrf token"
+    curl=("${curl[@]}" -F "CSRF=$csrf")
 }
+
 lorem(){
     chars=$(( RANDOM % 1000 ))
     LC_ALL=C grep -"m$chars" -aEo '[[:alnum:]]' /dev/urandom | tr -d '\n' | paste -s
 }
+
+subscribe() {
+    get_csrf "/honkers"
+    honker=bikalpa$1
+    url="https://$honker.ashwink.com.np/u/$honker"
+    "${curl[@]}" -iF "url=$url" "$domain/submithonker"
+}
+
+bark(){
+    get_csrf
+    lorem | "${curl[@]}" -iF "noise=<-" "$domain/honk"> "$tmpfile"
+    status=$?
+
+    if head -n1 "$tmpfile" | grep -qF 'HTTP/1.1 303 See Other'; then
+	awk -v"host=$domain" '/Location:/{printf "%s%s\n", host, $2}' "$tmpfile"
+    else
+	status=1
+    fi
+
+    exit "$status"
+}
+
 if (( $# < 1 )); then
     usage
 fi
 
-case $# in
-    2)
-	file=$2
-	port=$1
-	;;
-    1)
-	port=$1
-	;;
-esac
+port=$1
+shift
 
 uname=bikalpa$port
-shift
 pw=$uname
 domain="https://$uname.ashwink.com.np"
 cookie="honk-$uname.txt"
+
 tmpfile="/tmp/honking.$$.html"
 trap 'rm "$tmpfile"' EXIT
-curl=(curl -sf -b "$cookie" -c "$cookie")
+curl=(curl -f -b "$cookie" -c "$cookie")
 
-if ! [[ -f "$cookie" ]]; then
-    login
-fi
+# if [[ $DEBUG ]]; then
+#     set -x
+# else
+#     curl=("${curl[@]}" -s)
+# fi
 
-if ! get_csrf; then
-    echo "trying to login" >&2
-    login
-    get_csrf
-fi
+# if [[ $file ]]; then
+# 	curl=("${curl[@]}" -F "donk=@$file")
+# fi
 
-if [[ $file ]]; then
-    curl=("${curl[@]}" -F "donk=@$file")
-fi
-
-lorem | "${curl[@]}" -iF "CSRF=$csrf" -F "noise=<-" "$domain/honk" > "$tmpfile"
-status=$?
-
-if head -n1 "$tmpfile" | grep -qF 'HTTP/1.1 303 See Other'; then
-    awk -v"host=$domain" '/Location:/{printf "%s%s\n", host, $2}' "$tmpfile"
-else
-    status=1
-fi
-
-exit "$status"
+case $1 in
+    bark|'')
+	bark
+	;;
+    subscribe)
+	honker=$2; shift
+	subscribe "$honker"
+	;;
+esac
