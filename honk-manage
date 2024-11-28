@@ -3,10 +3,13 @@
 #up, down, random, specific
 
 usage(){
-    echo "$@" >&2
-    echo "honk-init port service" >&2
+    printf '%s\n' "$*" >&2
+    cat >&2
     exit 1
-}
+}<<\EOF
+honk-manage _port_ up|down|random|(sleep _time_)
+random sleeps for RANDOM % (60*60) time
+EOF
 
 init(){
     mkdir -p "$datadir" || exit 1
@@ -37,15 +40,15 @@ forceDown() {
     kill -SIGKILL "$honkPid"
 }
 
-specific(){
+timed_sleep(){
     time=$1
     down
     sleep "$time"
     up
 }
 
-random(){
-   rand=$((1 + RANDOM % 10))
+random_sleep(){
+   rand=$((1 + RANDOM % (60*60)))
    specific $rand
 }
 
@@ -66,8 +69,10 @@ case $1 in
 	;;
 esac
 
-datadir="$HOME/honk/$port"
-viewdir="$HOME/honk-0.9.8"
+. ~/.honk-manage.conf
+datadir=${datadir-"$HOME/honk/$port"}
+viewdir=${viewdir-"$HOME/honk-0.9.8"}
+rundir=${rundir-"$HOME/allthingshonk"}
 
 if ! [[ -d "$datadir" ]]; then
 	init
@@ -89,14 +94,12 @@ case $task in
     forceDown)
 	forceDown
 	;;
-    specific)
-	specific "$@"
+    sleep)
+	[[ $1 ]] || usage "sleep _sleep time_"
+	timed_sleep "$@"
 	;;
     random)
-	random
-	;;
-    bark)
-	honk_post
+	random_sleep
 	;;
     *)
         echo "Invalid option.Try up, down or forceDown"
