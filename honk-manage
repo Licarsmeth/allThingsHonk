@@ -49,7 +49,7 @@ timed_sleep(){
 
 random_sleep(){
    rand=$((1 + RANDOM % (60*60)))
-   specific $rand
+   timed_sleep "$rand"
 }
 
 set -x
