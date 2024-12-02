@@ -26,6 +26,7 @@ init(){
     cd ../
     mapfile -t list < <(printf '%s\n' */ | sed 's,/$,,g')
     honk-aggressively "$port" subscribe "${list[@]}"
+    [[ $task = "up" ]] && exit
 }
 
 up(){
@@ -69,10 +70,10 @@ case $1 in
 	;;
 esac
 
-. ~/.honk-manage.conf
-datadir=${datadir-"$HOME/honk/$port"}
-viewdir=${viewdir-"$HOME/honk-0.9.8"}
-rundir=${rundir-"$HOME/allthingshonk"}
+datadir="$HOME/honk/$port"
+viewdir="$HOME/honk-0.9.8"
+rundir="$HOME/allthingshonk"
+. ~/allthingshonk/honk-manage.conf
 
 if ! [[ -d "$datadir" ]]; then
 	init
