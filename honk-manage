@@ -15,17 +15,16 @@ init(){
     mkdir -p "$datadir" || exit 1
     cd "$datadir" || exit 1
 
-    uname="bikalpa$port"
+    uname="$machine$port"
     pw="$uname"
     listen="127.0.0.1:$port"
-    domain="bikalpa$port.ashwink.com.np"
+    domain="$port.$machine.ashwink.com.np"
 
     printf "%s\n" "$uname" "$pw" "$listen" "$domain" |
 	honk init || exit 1
     up
-    cd ../
-    mapfile -t list < <(printf '%s\n' */ | sed 's,/$,,g')
-    honk-aggressively "$port" subscribe "${list[@]}"
+    cd "$datadir/" || exit 1
+    honk-aggressively "$port" subscribe-all
     [[ $task = "up" ]] && exit
 }
 
@@ -75,15 +74,15 @@ viewdir="$HOME/honk-0.9.8"
 rundir="$HOME/allthingshonk"
 . ~/allthingshonk/honk-manage.conf
 
+task=$1
+shift
+
 if ! [[ -d "$datadir" ]]; then
 	init
 fi
 
 cd "$datadir" || exit 1
 honkPid="$(lsof -i "@0.0.0.0:$port" | awk 'NR==2 {print $2}')"
-
-task=$1
-shift
 
 case $task in
     up)
@@ -102,8 +101,17 @@ case $task in
     random)
 	random_sleep
 	;;
+    purge)
+	down
+	cd
+	rm "$datadir"
+	;;
+    purge-all)
+	pkill honk
+	cd "$datadir/../" || die "couldn't cd"
+	rm -rf *
+	;;
     *)
         echo "Invalid option.Try up, down or forceDown"
         ;;
 esac
-
