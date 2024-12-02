@@ -1,5 +1,15 @@
 #!/bin/bash
-#honk-manager start 20(no. of servers) 5(% of down servers)
+#honk-manager start 20(no. of servers) 5(% of down servers) 50(% of upped among the downed servers)
+
+usage(){
+    printf '%s\n' "$*" >&2
+    cat >&2
+    exit 1
+}<<\EOF
+honk-manager _upserver_ _downdistribution_ _updistribution_
+upserver is a number between 1 and 1000
+down and up distributions between 1 and 100 
+EOF
 
 die(){
     printf '%s\n' "$*" >&2
@@ -10,13 +20,55 @@ die(){
 #all folders stored in an array
 #among those, $2 servers are downed, others are upped
 #among downed servers, say 50% are upped
-servers=()
-start(){
-    for (( i=0; i<$1; i++)); do
+down_servers=()
+up_servers=()
+
+totalservers=$1
+downdistribution=$2
+updistribution=$3
+
+get_servers(){
+    #$1 folders upped and stored in servers array
+    for (( i=0; i<"$totalservers"; i++)); do
 	port=$((5000+i))
-	honk-manage up "$port"
+	honk-manage "$port" up
 	honk-aggressively "$port"
-	servers=("${servers[@]}" "$port")
+	up_servers=("${servers[@]}" "$port")
     done
 }
-   
+
+down_servers(){
+    #$2 servers downed
+    tmp=()
+    for server in "${up_servers[@]}"; do
+	if ((RANDOM%100 <= "$downdistribution" )); then
+	   honk-manage "$server" down
+	   down_servers+=("$server")
+	else
+	    tmp+=("$server")
+	fi
+	up_servers=("${tmp[@]}")
+    done
+}
+
+up_servers(){
+    #$3 servers upped
+    tmp=()
+     for server in "${down_servers[@]}"; do
+	if ((RANDOM%100 <= "$updistribution" )); then
+	    honk-manage "$server" up
+	    up_servers+=("$server")
+	else
+	    tmp+=("$server")
+	fi
+	down_servers=("${tmp[@]}")
+    done
+}
+
+if (( $# < 3 )); then
+    usage "not enough args"
+fi
+
+get_servers
+down_servers
+up_servers 
