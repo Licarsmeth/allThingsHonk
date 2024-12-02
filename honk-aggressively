@@ -63,25 +63,15 @@ fi
 
 port=$1
 shift
-
+. ~/allthingshonk/honk-manage.conf
 uname=bikalpa$port
 pw=$uname
 domain="https://$uname.ashwink.com.np"
-cookie="honk-$uname.txt"
+cookie="$rundir/honk-$uname.txt"
 
 tmpfile="/tmp/honking.$$.html"
 trap 'rm "$tmpfile"' EXIT
 curl=(curl -f -b "$cookie" -c "$cookie")
-
-# if [[ $DEBUG ]]; then
-#     set -x
-# else
-#     curl=("${curl[@]}" -s)
-# fi
-
-# if [[ $file ]]; then
-# 	curl=("${curl[@]}" -F "donk=@$file")
-# fi
 
 case $1 in
     bark|'')
