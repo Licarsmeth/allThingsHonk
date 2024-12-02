@@ -1,0 +1,22 @@
+#!/bin/bash
+#honk-manager start 20(no. of servers) 5(% of down servers)
+
+die(){
+    printf '%s\n' "$*" >&2
+    exit 1
+}
+
+#start 20 gives the first 20 folders
+#all folders stored in an array
+#among those, $2 servers are downed, others are upped
+#among downed servers, say 50% are upped
+servers=()
+start(){
+    for (( i=0; i<$1; i++)); do
+	port=$((5000+i))
+	honk-manage up "$port"
+	honk-aggressively "$port"
+	servers=("${servers[@]}" "$port")
+    done
+}
+   
