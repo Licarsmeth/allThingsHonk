@@ -54,7 +54,7 @@ random_sleep(){
 
 set -x
 
-if (( $# < 2 )); then
+if (( $# < 2 )) && [[ $1 != "purge-all" ]]; then
     usage "not enough args"
 fi
 
@@ -65,9 +65,10 @@ case $1 in
 	shift
     ;;
     purge-all)
-	pkill honk
+	pkill --exact honk
 	cd ~/honk/ || die "couldn't cd"
 	rm -rf *
+	exit
 	;;
     *)
 	usage "arg must be all digits"
