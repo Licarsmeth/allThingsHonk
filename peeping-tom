@@ -66,14 +66,14 @@ get_run(){
 insert_servers(){
     for (( i=0; i<servers; i++ )); do
 	port=$((5000+i))
-	printf "insert into hosts(id, url, port) values (%s, '%s', %s);" "$i" "$port.$machine.ashwink.com.np" "$port"
+	printf "insert into hosts(id, url, port) values (%s, '%s', %s);\n" "$i" "$port.$machine.ashwink.com.np" "$port"
     done
 }
 
 attach_db(){
     for (( i=0; i<servers; i++ )); do
 	port=$((5000+i))
-	printf "attach database '%s' as %s;" "$datadir/$port/honk.db" "$machine$port"
+	printf "attach database '%s' as %s;\n" "$datadir/$port/honk.db" "$machine$port"
     done
 }
 
@@ -82,7 +82,7 @@ tries(){
 	port=$((5000+i))
 	doovers=$machine$port.doovers
 	printf "insert into tries(run_id, host_id, tries, count)
-select '%s', '%s', tries, count(*) from $doovers group by tries;" "$run" "$i"
+select '%s', '%s', tries, count(*) from $doovers group by tries;\n" "$run" "$i"
     done
 }
 
@@ -91,7 +91,7 @@ rcpt(){
 	port=$((5000+i))
 	doovers=$machine$port.doovers
 	printf "insert into delivery_rcpt(run_id, host_id, rcpt, count)
-select '%s', '%s', rcpt, count(*) from $doovers group by rcpt;" "$run" "$i"
+select '%s', '%s', rcpt, count(*) from $doovers group by rcpt;\n" "$run" "$i"
     done
 }
 
@@ -103,6 +103,7 @@ servers=$1 up_dist=$2 down_dist=$3 honk_dist=$4
 	create_tables
     fi
     insert_servers
+    attach_db
     while read cmd < "$peepfile"; do
 	case $cmd in
 	    "exit")
@@ -110,8 +111,7 @@ servers=$1 up_dist=$2 down_dist=$3 honk_dist=$4
 		;;
 	esac
 	get_run
-	attach_db
 	tries
 	rcpt
     done
-} | sqlite3 "$db"
+} | tee /tmp/log.log | sqlite3 "$db"
