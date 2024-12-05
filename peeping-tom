@@ -1,15 +1,19 @@
 #!/bin/bash
-#set -x
-
-#run commands to get tries,total, rcpt, total
-#create a db in each sent folder
-#store tries, total, rcpt, date
-
+. ~/allthingshonk/honk-manage.conf
+db=$rundir/stats.db
+peepfile=$rundir/peep
 usage(){
     cat >&2
     exit 1
-}<<EOF
-peeping-tom 
+} <<EOF
+peeping-tom total-servers up_dist down_dist honk_dist
+
+Creates $db, measuring on each "peep" command read from
+$peepfile fifo. The tables and their meanings are:
+
+Runs	     synchronization point for collected data on run_id.
+Tries	     for each host, how many post are yet undelivered ?
+Delivery_Rcpt	 for each host, how many post are yet undelivered for each recipient, in total ?
 EOF
 
 die(){
@@ -17,57 +21,97 @@ die(){
     exit 1
 }
 
-dir1="$HOME/honk/5001"
-honk_db_file="$dir1/honk.db"
-log_db_file="$HOME/honk/logs.db"
-cd "$dir1" || die "couldn't go to $dir1"
+create_tables(){
+    runs_table="create table runs(
+id integer primary key autoincrement,
+time string,
+servers integer,
+up_dist integer,
+down_dist integer,
+honk_dist integer);"
 
-create_runs() {
-    if [ ! -f "$log_db_file" ]; then
-	sqlite3 "$log_db_file" "CREATE TABLE runs (id INTEGER PRIMARY KEY AUTOINCREMENT, bla INT);"
-	sqlite3 "$log_db_file" "CREATE TABLE tries (current_dt TEXT, runs INT, tries INT, count INT);"
-	sqlite3 "$log_db_file" "CREATE TABLE rcpt (current_dt TEXT, runs INT, rcpt TEXT, count INT);"
-    fi
+    hosts_table="create table hosts(
+id integer primary key,
+url string,
+port integer);"
 
-	
-   current_run=$(sqlite3 "$log_db_file" "insert into runs (bla) values (2) returning id;")
+    tries_table="create table tries(
+run_id integer,
+host_id integer,
+tries integer,
+count integer,
+foreign key(run_id) references runs(id),
+foreign key(host_id) references hosts(id));"
 
+    rcpt_table="create table delivery_rcpt(
+run_id integer,
+host_id integer,
+rcpt string,
+count integer,
+foreign key(run_id) references runs(id),
+foreign key(host_id) references hosts(id));"
+    printf '%s\n' \
+	   "$runs_table" \
+	   "$hosts_table" \
+	   "$tries_table" \
+	   "$rcpt_table"
 }
 
-create_tries() {
-    local dir=$1
-
-    if [[ -f "$honk_db_file" ]]; then
-        result=$(sqlite3 "$honk_db_file" "SELECT datetime('now') AS current_dt, tries, COUNT(*) AS count FROM doovers GROUP BY tries;")
-
-        if [[ ! -f "$log_db_file" ]]; then
-            sqlite3 "$log_db_file" "CREATE TABLE tries (current_dt TEXT, runs INT, tries INT, count INT);"
-        fi
-        echo "$result" | while
-	    IFS='|' read -r current_dt tries count; do
-	    sqlite3 "$log_db_file" "INSERT INTO tries (current_dt,runs, tries, count) VALUES ('$current_dt',$current_run, $tries, $count);"
-	done
-    else
-        echo "Database file not found in $dir"
-    fi
+get_run(){
+    ctime=$(date "+%Y-%m-%d %H:%S")
+    run=$(sqlite3 "$db" "insert into runs(time, servers, up_dist, down_dist, honk_dist) values (
+'$ctime', $servers, $up_dist, $down_dist, $honk_dist) returning id;")
 }
 
-create_rcpt() {
-    local dir=$1
-
-    if [[ -f "$honk_db_file" ]]; then
-        result=$(sqlite3 "$honk_db_file" "SELECT datetime('now') AS current_dt, rcpt, COUNT(*) AS count FROM doovers GROUP BY tries;")
-
-        if [[ ! -f "$log_db_file" ]]; then
-            sqlite3 "$log_db_file" "CREATE TABLE rcpt (current_dt TEXT, runs INT, rcpt TEXT, count INT);"
-        fi
-        echo "$result" | while IFS='|' read -r current_dt rcpt count; do
-	sqlite3 "$log_db_file" "INSERT INTO rcpt (current_dt,runs, rcpt, count) VALUES ('$current_dt', $current_run, '$rcpt', $count);"
-	done
-    else
-        echo "Database file not found in $dir"
-    fi
+insert_servers(){
+    for (( i=0; i<servers; i++ )); do
+	port=$((5000+i))
+	printf "insert into hosts(id, url, port) values (%s, '%s', %s);" "$i" "$port.$machine.ashwink.com.np" "$port"
+    done
 }
-create_runs
-create_tries "$dir1"
-create_rcpt "$dir1"
+
+attach_db(){
+    for (( i=0; i<servers; i++ )); do
+	port=$((5000+i))
+	printf "attach database '%s' as %s;" "$datadir/$port/honk.db" "$machine$port"
+    done
+}
+
+tries(){
+    for (( i=0; i<servers; i++ )); do
+	port=$((5000+i))
+	doovers=$machine$port.doovers
+	printf "insert into tries(run_id, host_id, tries, count)
+select '%s', '%s', tries, count(*) from $doovers group by tries;" "$run" "$i"
+    done
+}
+
+rcpt(){
+    for (( i=2; i<servers; i++ )); do
+	port=$((5000+i))
+	doovers=$machine$port.doovers
+	printf "insert into delivery_rcpt(run_id, host_id, rcpt, count)
+select '%s', '%s', rcpt, count(*) from $doovers group by rcpt;" "$run" "$i"
+    done
+}
+
+if [[ $# != 4 ]]; then usage; fi
+servers=$1 up_dist=$2 down_dist=$3 honk_dist=$4
+
+{
+    if ! [[ -f "$db" ]]; then
+	create_tables
+    fi
+    insert_servers
+    while read cmd < "$peepfile"; do
+	case $cmd in
+	    "exit")
+		exit 0
+		;;
+	esac
+	get_run
+	attach_db
+	tries
+	rcpt
+    done
+} | sqlite3 "$db"
