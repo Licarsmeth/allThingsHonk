@@ -74,6 +74,7 @@ port=$1
 shift
 # shellcheck source=honk-manage.conf
 . ~/allthingshonk/honk-manage.conf
+datadir=$datadir/$port
 uname=$machine$port
 pw=$uname
 domain="https://$port.$machine.ashwink.com.np"

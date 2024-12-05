@@ -75,11 +75,9 @@ case $1 in
 	;;
 esac
 
-datadir="$HOME/honk/$port"
-viewdir="$HOME/honk-0.9.8"
-rundir="$HOME/allthingshonk"
-. ~/allthingshonk/honk-manage.conf
 
+. ~/allthingshonk/honk-manage.conf
+datadir="$datadir/$port"
 task=$1
 shift
 
