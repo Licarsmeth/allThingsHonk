@@ -6,7 +6,7 @@ usage(){
     cat >&2
     exit 1
 }<<\EOF
-honk-manager _upserver_ _downdistribution_ _updistribution_ _honkdistribution_
+honk-manager _upserver_ _downdistribution_ _updistribution_ _honkdistribution_ _honktime_
 upserver is a number between 1 and 1000
 down,up and honk distributions between 1 and 100
 honk means percent of upped servers that we want to honk with
@@ -55,21 +55,12 @@ up_servers_func(){
     done
 }
 
-honk_in_up(){
-    #$4 servers honk aggressively
-    tmp=()
-     for server in "${up_servers[@]}"; do
-	 if ((RANDOM%100 <= "$honkdistribution" )); then
-	     honk-aggressively "$server"
-	 fi
-     done
-}
-
 cleanup(){
     set -x
     echo exit > "$rundir/peep" &
     declare -p up_servers
     pkill --exact honk
+    pkill honk-server
 }
 
 #start 20 gives the first 20 folders
@@ -83,8 +74,12 @@ totalservers=20
 downdistribution=10
 updistribution=50
 honkdistribution=60
+honktime=3
 
 case $# in
+    5)
+	honktime=$5
+	;&
     4)
 	(( $4 < 100 && $4 > 1 )) || usage
 	honkdistribution=$4
@@ -114,12 +109,12 @@ get_servers 1>&3 2>&1
 # shellcheck source=honk-manage.conf
 . ~/allthingshonk/honk-manage.conf
 mkfifo "$rundir/peep"
-#peeping-tom "$totalservers" &
+peeping-tom "$totalservers" "$updistribution" "$downdistribution" "$honkdistribution" &
+honk-servers "$totalservers" "$honkdistribution" "$honktime"
 
 while sleep "$((2 + RANDOM %5))"; do
     declare -p up_servers
     down_servers_func 1>&3 2>&1
     up_servers_func 1>&3 2>&1
-    honk_in_up 1>&3 2>&1
-#    pritntf '%s %s\n' peep "${#up_servers[@]}" > "$rundir/peep"
+    pritntf '%s %s\n' peep "${#up_servers[@]}" > "$rundir/peep"
 done
