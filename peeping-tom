@@ -1,6 +1,6 @@
 #!/bin/bash
 . ~/allthingshonk/honk-manage.conf
-db=$rundir/stats.db
+db="$rundir/stats_$(date '+%Y-%m-%d-%H:%M:%S')_$machine.db"
 peepfile=$rundir/peep
 usage(){
     cat >&2

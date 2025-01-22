@@ -43,7 +43,7 @@ case $# in
 	honktime=$3
 	;&
     2)
-	(( $4 < 100 && $4 > 1 )) || usage
+	(( $2 < 100 && $2 > 1 )) || usage
 	honkdistribution=$2
 	;&
     1)
@@ -60,6 +60,3 @@ while sleep "$honktime"; do
     honk-servers "totalservers" "$honkdistribution" 1>&3 2>&1
 done
 
-	 
-	
-	

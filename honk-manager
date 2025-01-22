@@ -1,6 +1,5 @@
 #!/bin/bash
 #honk-manager start 20(no. of servers) 5(% of down servers) 50(% of upped among the downed servers) 30(% of upped servers that want to honk aggressively)
-
 usage(){
     printf '%s\n' "$*" >&2
     cat >&2
