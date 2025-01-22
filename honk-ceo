@@ -1,6 +1,5 @@
 #!/bin/bash
 #honk-ceo 1000 (max run) 5 (start down percent) 5 (down increment) 70 (up decrement) 3 (up decrement)
-set -x
 usage(){
     printf '%s\n' "$*" >&2
     cat >&2
@@ -61,11 +60,13 @@ while (( downdist<90 || updist>10 )); do
 	downdist=$(( downdist + downincrement ));
 	if (( downdist >= 90 )); then break; fi
     fi
-    # if (( startupdist > 10 )); then
-    # 	startupdist=$(( startupdist - updecrement ));
-    # 	if (( startupdist < 10 )); then break; fi
-    # fi
+    if (( updist > 10 )); then
+    	updist=$(( updist - updecrement ));
+    	if (( updist < 10 )); then break; fi
+    fi
+    set -x
     honk-manager "$totalservers" "$downdist" "$updist" 60 3 "$maxrun"
+    set +x
 done
 
 
