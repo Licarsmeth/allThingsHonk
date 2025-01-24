@@ -30,7 +30,6 @@ honk_servers(){
      done
 }
 
-total_servers=()
 totalservers=20
 honkdistribution=60
 honktime=3

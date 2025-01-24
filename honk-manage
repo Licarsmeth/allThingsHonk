@@ -67,7 +67,7 @@ case $1 in
     purge-all)
 	pkill --exact honk
 	cd ~/honk/ || die "couldn't cd"
-	rm -rf *
+	rm -rf ./*
 	exit
 	;;
     *)
@@ -107,7 +107,7 @@ case $task in
 	;;
     purge)
 	down
-	cd
+	cd "$HOME" || exit 1
 	rm "$datadir"
 	;;
     *)

@@ -22,7 +22,7 @@ cleanup(){
     pkill --exact honk-manager
 }
 
-maxrun=1000
+maxrun=100
 downdist=5
 downincrement=5
 updist=60
@@ -65,8 +65,7 @@ while (( downdist<90 || updist>10 )); do
     	if (( updist < 10 )); then break; fi
     fi
     set -x
+    honk-manage purge-all
     honk-manager "$totalservers" "$downdist" "$updist" 60 3 "$maxrun"
     set +x
 done
-
-

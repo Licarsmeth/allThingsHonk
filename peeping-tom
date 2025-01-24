@@ -59,8 +59,7 @@ foreign key(host_id) references hosts(id));"
 
 get_run(){
     ctime=$(date "+%Y-%m-%d %H:%S")
-    run=$(sqlite3 "$db" "insert into runs(time, servers, up_dist, down_dist, honk_dist) values (
-'$ctime', $servers, $up_dist, $down_dist, $honk_dist) returning id;")
+    run=$(sqlite3 "$db" "insert into runs(time, servers, up_dist, down_dist, honk_dist) values ('$ctime', $servers, $up_dist, $down_dist, $honk_dist) returning id;")
 }
 
 insert_servers(){
@@ -87,7 +86,7 @@ select '%s', '%s', tries, count(*) from $doovers group by tries;\n" "$run" "$i"
 }
 
 rcpt(){
-    for (( i=2; i<servers; i++ )); do
+    for (( i=0; i<servers; i++ )); do
 	port=$((5000+i))
 	doovers=$machine$port.doovers
 	printf "insert into delivery_rcpt(run_id, host_id, rcpt, count)
@@ -104,7 +103,7 @@ servers=$1 up_dist=$2 down_dist=$3 honk_dist=$4
     fi
     insert_servers
     attach_db
-    while read cmd < "$peepfile"; do
+    while IFS= read -r cmd < "$peepfile"; do
 	case $cmd in
 	    "exit")
 		exit 0

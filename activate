@@ -1,1 +1,7 @@
-PATH=$HOME/allthingshonk:$PATH
+#!/bin/bash
+base=$HOME/allthingshonk
+export PATH="$base:$PATH"
+. "$base/honk-manage.conf"
+if [[ ! -f $HOME/allthingshonk/honk ]]; then
+   ln -s "$viewdir/honk" .
+fi
