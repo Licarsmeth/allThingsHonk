@@ -1,16 +1,24 @@
 #!/bin/bash
-#honk-ceo 1000 (max run) 5 (start down percent) 5 (down increment) 70 (up decrement) 3 (up decrement)
+
+maxrun=100
+downdist=5
+downincrement=5
+updist=60
+updecrement=0
+totalservers=8
+
 usage(){
     printf '%s\n' "$*" >&2
     cat >&2
     exit 1
-}<<\EOF
-honk-ceo _maxrun_ _startdowndist_ _downincrement_ _startupdist_ _updecrement_
-maxrun - max runs before exiting
-startdowndist- down distribution starting value
-downincrement- down distribution decrementing value
-5 5 means it'll first be 5 then 10 then 15
-similar for startupdist and updecrement
+}<<EOF
+honk-ceo [-t #servers] [-m maxrun] [-d downdist] [-D downincrement] [-u updist] [-U updecrement]
+-t, #servers	no of servers (default $totalservers)
+-m, maxrun	max runs before exiting (default $maxrun)
+-d, downdist	down distribution starting value (default $downdist)
+-D, downincrement	(+ve)change in downdist for each run (default $downincrement)
+-u, updist	up-distribution starting value (default $updist)
+-U, updecrement	(-ve)change in updist for each run (default $updecrement)
 EOF
 
 die(){
@@ -22,36 +30,37 @@ cleanup(){
     pkill --exact honk-manager
 }
 
-maxrun=100
-downdist=5
-downincrement=5
-updist=60
-updecrement=0
+while getopts 'm:d:u:t:D:U:' opt; do
+    case $opt in
+	m)
+	    maxrun=$OPTARG
+	    ;;
+	d)
+	    downdist=$OPTARG
+	    ;;
+	u)
+	    updist=$OPTARG
+	    ;;
+	t)
+	    totalservers=$OPTARG
+	    ;;
+	D)
+	    downincrement=$OPTARG
+	    ;;
+	U)
+	    updecrement=$OPTARG
+	;;
+	"?")
+	    usage
+	    ;;
+	*)
+	    printf '%s\n' "impossible" >&2
+	    usage
+	    ;;
+    esac
+done
 
-totalservers=8
-
-case $# in
-    5)
-	updecrement=$5
-	;&
-    4)
-	updist=$4
-	;&
-    3)
-	downincrement=$3
-	;&
-    2)
-	downdist=$2
-	;&
-    1)
-	maxrun=$1
-	;;
-    0)
-	;;
-    *)
-	usage eeeeeeeeeeeeeeeeeeeeeeeeeeee
-	;;
-esac
+# shellcheck source=activate
 . ~/allthingshonk/activate
 trap 'cleanup' EXIT
 

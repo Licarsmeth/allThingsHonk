@@ -1,20 +1,24 @@
 #!/bin/bash
-#honk-manager start 20(no. of servers) 5(% of down servers) 50(% of upped among the downed servers) 30(% of upped servers that want to honk aggressively)
+
+maxruns=1
+totalservers=8
+downdistribution=10
+updistribution=50
+honkdistribution=60
+honktime=3
 usage(){
     printf '%s\n' "$*" >&2
     cat >&2
     exit 1
-}<<\EOF
-maxruns - max runs before exiting
-upserver is a number between 1 and 1000
-down,up and honk distributions between 1 and 100
-honk means percent of upped servers that we want to honk with
+}<<EOF
+honk-manager [-t #servers] [-m maxruns] [-h honktime] [-H honkDist] [-U upDist] [-D downDist]
+-t, #servers	no of servers to run at once (default $totalservers)
+-m, maxruns	stop after m runs (default $maxruns)
+-h, honktime	post message each h seconds (default $honktime)
+-H, honkDist	% of servers which post messages (default $honkdistribution)
+-U, upDist	% of dead servers which are revived each run (default $updistribution)
+-D, downDist	% of servers which are killed each run (default $downdistribution)
 EOF
-
-die(){
-    printf '%s\n' "$*" >&2
-    exit 1
-}
 
 get_servers(){
     #$1 folders upped and stored in servers array
@@ -62,54 +66,42 @@ cleanup(){
     pkill --exact honk-servers
 }
 
-#start 20 gives the first 20 folders
-#all folders stored in an array
-#among those, $2 servers are downed, others are upped
-#among downed servers, say 50% are upped
-down_servers=()
-up_servers=()
-
-maxruns=1
-totalservers=8
-downdistribution=10
-updistribution=50
-honkdistribution=60
-honktime=3
-
-case $# in
-    6)
-	maxruns=$6
-	;&
-    5)
-	honktime=$5
-	;&
-    4)
-	(( $4 < 100 && $4 > 1 )) || usage
-	honkdistribution=$4
-    ;&
-    3)
-	(( $3 < 100 && $3 > 1 )) || usage
-	updistribution=$3
-    ;&
-    2)
-	(( $2 < 100 && $2 > 1 )) || usage
-	downdistribution=$2
-    ;&
-    1)
-	(( $1 < 1000 && $1 > 1)) || usage "no of servers"
-	totalservers=$1
-	;;
-    0)
-	;;
-    *)
-	usage
-	;;
-esac
+while getopts "t:m:h:H:U:D:" opt; do
+    case $opt in
+	t)
+	    totalservers=$OPTARG
+	    ;;
+	m)
+	    maxruns=$OPTARG
+	    ;;
+	h)
+	    honktime=$OPTARG
+	    ;;
+	H)
+	    honkdistribution=$OPTARG
+	    ;;
+	U)
+	    updistribution=$OPTARG
+	    ;;
+	D)
+	    downdistribution=$OPTARG
+	    ;;
+	"?")
+	    usage
+	    ;;
+	*)
+	    usage "impossible"
+	    ;;
+    esac
+done
 
 trap 'cleanup' EXIT
 exec 3>>~/allthingshonk/honk.log
 # shellcheck source=honk-manage.conf
 . ~/allthingshonk/honk-manage.conf
+
+down_servers=()
+up_servers=()
 get_servers 1>&3 2>&1
 
 mkfifo "$rundir/peep"
