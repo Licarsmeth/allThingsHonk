@@ -66,6 +66,6 @@ while (( downdist<90 || updist>10 )); do
     fi
     set -x
     honk-manage purge-all
-    honk-manager "$totalservers" "$downdist" "$updist" 60 3 "$maxrun"
+    honk-manager "$totalservers" "$downdist" "$updist" 60 3 "$maxrun" || exit 1
     set +x
 done

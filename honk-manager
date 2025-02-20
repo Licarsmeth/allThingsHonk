@@ -20,7 +20,7 @@ get_servers(){
     #$1 folders upped and stored in servers array
     for (( i=0; i<"$totalservers"; i++)); do
 	port=$((5000+i))
-	honk-manage "$port" up &
+	honk-manage "$port" up || exit 1
 	up_servers=("${up_servers[@]}" "$port")
     done
     wait
@@ -31,7 +31,7 @@ down_servers_func(){
     tmp=()
     for server in "${up_servers[@]}"; do
 	if ((RANDOM%100 <= "$downdistribution" )); then
-	   honk-manage "$server" down
+	   honk-manage "$server" down || exit 1
 	   down_servers+=("$server")
 	else
 	    tmp+=("$server")
@@ -45,7 +45,7 @@ up_servers_func(){
     tmp=()
      for server in "${down_servers[@]}"; do
 	if ((RANDOM%100 <= "$updistribution" )); then
-	    honk-manage "$server" up
+	    honk-manage "$server" up || exit 1
 	    up_servers+=("$server")
 	else
 	    tmp+=("$server")

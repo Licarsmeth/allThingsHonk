@@ -81,8 +81,8 @@ datadir="$datadir/$port"
 task=$1
 shift
 
-if ! [[ -d "$datadir" ]]; then
-	init
+if [[ $task != "init" ]] && ! [[ -d "$datadir" ]]; then
+    die "$datadir hasn't been inited"
 fi
 
 cd "$datadir" || exit 1
