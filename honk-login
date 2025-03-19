@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# shellcheck source=honk-manage.conf
+. ~/allthingshonk/honk-manage.conf
+
+usage(){
+    cat >&2
+    exit 1
+}<<EOF
+honk-login domain username [csrf_page]
+saves login cookie to $rundir/cookie-\$domain-\$username
+if csrf_page is specified, get csrf token from that page.
+EOF
+
+if (( $# < 2 )); then
+    usage
+fi
+
+domain=$1
+username=$2
+password=$username
+if [[ $domain =~ https* ]]; then
+    domain=${domain##https://}
+fi
+cookie=$rundir/cookie-$domain-$username
+domain=https://$domain
+shift 2
+
+csrf=false
+if (( $# > 0 )) ; then
+    csrf=$1
+    shift
+fi
+
+tmpfile="/tmp/honk-login.$$.html"
+trap 'rm "$tmpfile"' EXIT
+
+curl=(curl -f -b "$cookie" -c "$cookie" -d "username=$username" -d "password=$password")
+
+"${curl[@]}" "$domain/dologin" > "$tmpfile" || die "couldn't login"
+
+status=$?
+
+if [[ $csrf == false ]]; then
+    exit $status
+fi
+
+"${curl[@]}" "$domain$csrf" > "$tmpfile" || die "couldn't connect"
+
+awk -F'"' 'BEGIN{e=1}
+/<input type="hidden" name="CSRF"/{print $6; e=0; exit}
+END{exit e}' "$tmpfile"
+
