@@ -23,9 +23,6 @@ init(){
     printf "%s\n" "$uname" "$pw" "$listen" "$domain" |
 	honk init || exit 1
     up
-    cd "$datadir/" || exit 1
-    honk-aggressively "$port" subscribe-all
-    [[ $task = "up" ]] && exit
 }
 
 up(){
@@ -50,6 +47,10 @@ timed_sleep(){
 random_sleep(){
    rand=$((1 + RANDOM % (60*60)))
    timed_sleep "$rand"
+}
+
+subscribe_all(){
+    die "not implemented"
 }
 
 set -x
@@ -83,6 +84,9 @@ shift
 
 if [[ $task != "init" ]] && ! [[ -d "$datadir" ]]; then
     die "$datadir hasn't been inited"
+elif [[ $task = "init" ]]; then
+    init
+    exit
 fi
 
 cd "$datadir" || exit 1
@@ -108,9 +112,13 @@ case $task in
     purge)
 	down
 	cd "$HOME" || exit 1
-	rm "$datadir"
+	rm -r "$datadir"
+	;;
+    subscribe-all)
+	subscribe-all
+	exit 1
 	;;
     *)
-        echo "Invalid option.Try up, down or forceDown"
+        die "Invalid option.Try up, down or forceDown"
         ;;
 esac

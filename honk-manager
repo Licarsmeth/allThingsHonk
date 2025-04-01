@@ -58,9 +58,16 @@ up_servers_func(){
     done
 }
 
+subscribe_all(){
+    for (( i=0; i<"$totalservers"; i++)); do
+	port=$((5000+i))
+	honk-manage "$port" subscribe-all || die "couldn't subscribe by $port"
+    done
+}
+
 cleanup(){
     set -x
-    echo exit > "$rundir/peep" 
+    [[ $start ]] && echo exit > "$rundir/peep" 
     declare -p up_servers
     pkill --exact honk
     pkill --exact honk-servers
@@ -103,9 +110,13 @@ exec 3>>~/allthingshonk/honk.log
 down_servers=()
 up_servers=()
 get_servers 1>&3 2>&1
+sleep 1
+subscribe_all
 
 mkfifo "$rundir/peep"
 peeping-tom "$totalservers" "$updistribution" "$downdistribution" "$honkdistribution" &
+
+start=true
 honk-servers "$totalservers" "$honkdistribution" "$honktime" &
 
 for ((i=0; i<maxruns; i++)) ; do
