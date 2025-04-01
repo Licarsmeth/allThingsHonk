@@ -7,26 +7,31 @@ usage(){
     cat >&2
     exit 1
 }<<\EOF
-honk-manage _port_ up|down|random|(sleep _time_)
+honk-manage _port_ up|down|random|(sleep _time_)|(subscribe-all totalServers)
 random sleeps for RANDOM % (60*60) time
 EOF
 
 init(){
     mkdir -p "$datadir" || exit 1
-    cd "$datadir" || exit 1
 
     uname="$machine$port"
     pw="$uname"
     listen="127.0.0.1:$port"
     domain="$port.$machine.ashwink.com.np"
 
-    printf "%s\n" "$uname" "$pw" "$listen" "$domain" |
-	honk init || exit 1
+    (
+	cd "$datadir" || die "couldn't cd to $datadir"
+	printf "%s\n" "$uname" "$pw" "$listen" "$domain" |
+	    honk init || exit 1
+    )
     up
 }
 
 up(){
-    honk --viewdir="$viewdir" &
+    (
+	cd "$datadir" || die "couldn't cd to $datadir"
+	honk --viewdir="$viewdir" &
+    )
 }
 
 down() {
@@ -50,7 +55,13 @@ random_sleep(){
 }
 
 subscribe_all(){
-    die "not implemented"
+    total=$1
+    for m in "${allmachines[@]}"; do
+	for ((i=0; i<"$total"; i++)); do
+	    pp=$((5000+i))
+	    honk-subscribe "$port.$machine.ashwink.com.np" "$machine$port" "https://$pp.$m.ashwink.com.np/u/$m$pp"
+	done
+    done
 }
 
 set -x
@@ -89,7 +100,8 @@ elif [[ $task = "init" ]]; then
     exit
 fi
 
-cd "$datadir" || exit 1
+[[ -d "$datadir" ]] || die "couldn't find $datadir"
+
 honkPid="$(lsof -i "@0.0.0.0:$port" | awk 'NR==2 {print $2}')"
 
 case $task in
@@ -115,7 +127,8 @@ case $task in
 	rm -r "$datadir"
 	;;
     subscribe-all)
-	subscribe-all
+	[[ $1 ]] || usage "subscribe-all _totalServers_"
+	subscribe_all "$@"
 	exit 1
 	;;
     *)

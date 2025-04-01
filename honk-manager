@@ -24,7 +24,7 @@ get_servers(){
     #$1 folders upped and stored in servers array
     for (( i=0; i<"$totalservers"; i++)); do
 	port=$((5000+i))
-	honk-manage "$port" up || exit 1
+	honk-manage "$port" init || exit 1
 	up_servers=("${up_servers[@]}" "$port")
     done
     wait
@@ -61,7 +61,7 @@ up_servers_func(){
 subscribe_all(){
     for (( i=0; i<"$totalservers"; i++)); do
 	port=$((5000+i))
-	honk-manage "$port" subscribe-all || die "couldn't subscribe by $port"
+	honk-manage "$port" subscribe-all "$totalservers" || die "couldn't subscribe by $port"
     done
 }
 
@@ -103,10 +103,10 @@ while getopts "t:m:h:H:U:D:" opt; do
 done
 
 trap 'cleanup' EXIT
-exec 3>>~/allthingshonk/honk.log
+exec 3>~/allthingshonk/honk.log
 # shellcheck source=honk-manage.conf
 . ~/allthingshonk/honk-manage.conf
-
+set -x
 down_servers=()
 up_servers=()
 get_servers 1>&3 2>&1
