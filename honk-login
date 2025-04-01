@@ -10,6 +10,9 @@ usage(){
 honk-login domain username [csrf_page]
 saves login cookie to $rundir/cookie-\$domain-\$username
 if csrf_page is specified, get csrf token from that page.
+
+do not pass scheme:// on domain, as we use the domain name on cookie file.
+Thus, it'll always be https://domain
 EOF
 
 if (( $# < 2 )); then
@@ -19,11 +22,10 @@ fi
 domain=$1
 username=$2
 password=$username
-if [[ $domain =~ https* ]]; then
-    domain=${domain##https://}
+if [[ $domain =~ *"://"* ]]; then
+    die "domain can't contian scheme://"
 fi
 cookie=$rundir/cookie-$domain-$username
-domain=https://$domain
 shift 2
 
 csrf=false
@@ -34,10 +36,10 @@ fi
 
 tmpfile="/tmp/honk-login.$$.html"
 trap 'rm "$tmpfile"' EXIT
+set -x
+curl=(curl -f -b "$cookie" -c "$cookie")
 
-curl=(curl -f -b "$cookie" -c "$cookie" -d "username=$username" -d "password=$password")
-
-"${curl[@]}" "$domain/dologin" > "$tmpfile" || die "couldn't login"
+"${curl[@]}" -d "username=$username" -d "password=$password" "https://$domain/dologin" > "$tmpfile" || die "couldn't login"
 
 status=$?
 
@@ -45,7 +47,7 @@ if [[ $csrf == false ]]; then
     exit $status
 fi
 
-"${curl[@]}" "$domain$csrf" > "$tmpfile" || die "couldn't connect"
+"${curl[@]}" "https://$domain$csrf" > "$tmpfile" || die "couldn't connect"
 
 awk -F'"' 'BEGIN{e=1}
 /<input type="hidden" name="CSRF"/{print $6; e=0; exit}

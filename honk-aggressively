@@ -3,9 +3,9 @@ usage(){
     cat >&2
     exit 1
 }<<\EOF
-honk-aggressively port action
-the text is read from stdin.
-hostname is https://bikalpa$port.ashwink.com.np
+honk-aggressively domain username [password]
+post a long message on the domain.
+default password is same as username.
 EOF
 
 die(){
@@ -13,89 +13,38 @@ die(){
     exit 1
 }
 
-login(){
-    "${curl[@]}" -d "username=$uname" -d "password=$pw" "$domain/dologin" > "$tmpfile" || die "couldn't login"
-}
-
-get_csrf(){
-    login
-    "${curl[@]}" -i "$domain$1" > "$tmpfile" || die "couldn't connect"
-    csrf=$(
-	awk  -F'"' 'BEGIN{e=1}
-/<input type="hidden" name="CSRF"/{ print $6; e=0; exit}
-END { exit e }' "$tmpfile"
-	) || die "couldn't get csrf token"
-    curl=("${curl[@]}" -F "CSRF=$csrf")
-}
-
 lorem(){
     chars=$(( RANDOM % 1000 ))
     LC_ALL=C grep -"m$chars" -aEo '[[:alnum:]]' /dev/urandom | tr -d '\n' | paste -s
 }
 
-subscribe-all() {
-    get_csrf "/honkers"
-    cd "$datadir/../" || die "couldn't cd"
-    for i in */; do
-	i=${i%/}
-	[[ "$i" = "$port" ]] && continue
-	set -x
-	subscribe "$i"
-	honk-aggressively "$i" subscribe "$port" &
-	set +x
-    done
-}
-
-subscribe(){
-    honker=$machine$1
-    url="https://$1.$machine.ashwink.com.np/u/$honker"
-    "${curl[@]}" -iF "url=$url" "$domain/submithonker"
-}
-
-bark(){
-    get_csrf
-    lorem | "${curl[@]}" -iF "noise=<-" "$domain/honk"> "$tmpfile"
-    status=$?
-
-    if head -n1 "$tmpfile" | grep -qF 'HTTP/1.1 303 See Other'; then
-	awk -v"host=$domain" '/Location:/{printf "%s%s\n", host, $2}' "$tmpfile"
-    else
-	status=1
-    fi
-
-    exit "$status"
-}
-
-if (( $# < 1 )); then
+if (( $# < 2 )); then
     usage
 fi
 
-port=$1
-shift
+domain=$1
+username=$2
+password=$username
+shift 2
+if (( $# > 0 )); then
+    password=$3
+    shift
+fi
 # shellcheck source=honk-manage.conf
 . ~/allthingshonk/honk-manage.conf
-datadir=$datadir/$port
-uname=$machine$port
-pw=$uname
-domain="https://$port.$machine.ashwink.com.np"
-cookie="$rundir/honk-$uname.txt"
 
 tmpfile="/tmp/honking.$$.html"
-trap 'rm "$tmpfile"' EXIT
-curl=(curl -f -b "$cookie" -c "$cookie")
+#trap 'rm "$tmpfile"' EXIT
+set -x
+csrf=$(honk-login "$domain" "$username" "/")
+lorem | curl -b "$rundir/cookie-$domain-$username" -c "$rundir/cookie-$domain-$username" -i -F "CSRF=$csrf" -F "noise=<-" "https://$domain/honk"> "$tmpfile"
+status=$?
 
-action=$1
-shift
-case $action in
-    bark|'')
-	bark
-	;;
-    subscribe)
-	get_csrf "/honkers"
-	(( $# < 1 )) && usage
-	subscribe "$@"
-	;;
-    subscribe-all)
-	subscribe-all
-	;;
-esac
+if head -n1 "$tmpfile" | grep -qF 'HTTP/1.1 303 See Other'; then
+    awk -v"host=$domain" '/Location:/{printf "%s%s\n", host, $2}' "$tmpfile"
+else
+    status=1
+fi
+
+exit "$status"
+
