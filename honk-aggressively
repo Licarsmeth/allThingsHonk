@@ -37,7 +37,7 @@ tmpfile="/tmp/honking.$$.html"
 #trap 'rm "$tmpfile"' EXIT
 set -x
 csrf=$(honk-login "$domain" "$username" "/")
-lorem | curl -b "$rundir/cookie-$domain-$username" -c "$rundir/cookie-$domain-$username" -i -F "CSRF=$csrf" -F "noise=<-" "https://$domain/honk"> "$tmpfile"
+lorem | CURL -i -F "noise=<-" "https://$domain/honk"> "$tmpfile"
 status=$?
 
 if head -n1 "$tmpfile" | grep -qF 'HTTP/1.1 303 See Other'; then

@@ -10,3 +10,14 @@ die(){
     printf '%s\n' "$*" >&2
     exit 1
 }
+
+CURL(){
+    if [[ -z $domain ]] || [[ -z $username ]]; then
+	die "CURL needs \$domain and \$username defined"
+    fi
+    if [[ $csrf ]]; then
+	curl -b "$rundir/cookie-$domain-$username" -c "$rundir/cookie-$domain-$username" -F "CSRF=$csrf" "$@"
+    else
+	curl -b "$rundir/cookie-$domain-$username" -c "$rundir/cookie-$domain-$username" "$@"
+    fi
+}

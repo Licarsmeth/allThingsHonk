@@ -25,31 +25,27 @@ password=$username
 if [[ $domain =~ *"://"* ]]; then
     die "domain can't contian scheme://"
 fi
-cookie=$rundir/cookie-$domain-$username
 shift 2
-
-csrf=false
-if (( $# > 0 )) ; then
-    csrf=$1
-    shift
-fi
 
 tmpfile="/tmp/honk-login.$$.html"
 trap 'rm "$tmpfile"' EXIT
 set -x
-curl=(curl -f -b "$cookie" -c "$cookie")
 
-"${curl[@]}" -d "username=$username" -d "password=$password" "https://$domain/dologin" > "$tmpfile" || die "couldn't login"
-
+CURL -F "username=$username" -F "password=$password" "https://$domain/dologin" > "$tmpfile" || die "couldn't login"
 status=$?
 
-if [[ $csrf == false ]]; then
+csrf_page=false
+if (( $# > 0 )) ; then
+    csrf_page=$1
+    shift
+fi
+
+if [[ $csrf_page == false ]]; then
     exit $status
 fi
 
-"${curl[@]}" "https://$domain$csrf" > "$tmpfile" || die "couldn't connect"
+CURL "https://$domain$csrf_page" > "$tmpfile" || die "couldn't connect"
 
 awk -F'"' 'BEGIN{e=1}
 /<input type="hidden" name="CSRF"/{print $6; e=0; exit}
 END{exit e}' "$tmpfile"
-
