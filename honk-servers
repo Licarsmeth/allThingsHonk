@@ -1,5 +1,7 @@
 #!/bin/bash
 set -x
+. honk-manage.conf
+
 usage(){
     printf '%s\n' "$*" >&2
     cat >&2
@@ -7,11 +9,6 @@ usage(){
 }<<\EOF
 honk-servers _totalservers_ _honkdistribution_
 EOF
-
-die(){
-	printf '%s\n' "$*" >&2
-	exit 1
-}
 
 get_servers(){
     #$1 folders stored in servers array
@@ -25,7 +22,9 @@ honk_servers(){
     #servers honk aggressively
      for server in "${up_servers[@]}"; do
 	 if (( RANDOM%100 <= honkdistribution )); then
-	     honk-aggressively "$server"
+	     domain=$server.$machine.ashwink.com.np
+	     user=$machine$server
+	     honk-aggressively "$domain" "$user" || die "couldn't post message (noise)"
 	 fi
      done
 }
@@ -54,6 +53,7 @@ case $# in
 esac
 
 get_servers
+declare -p up_servers
 while sleep "$honktime"; do
     honk_servers "$totalservers" "$honkdistribution" # 1>&3 2>&1
 done

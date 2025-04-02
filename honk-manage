@@ -129,7 +129,6 @@ case $task in
     subscribe-all)
 	[[ $1 ]] || usage "subscribe-all _totalServers_"
 	subscribe_all "$@"
-	exit 1
 	;;
     *)
         die "Invalid option.Try up, down or forceDown"
