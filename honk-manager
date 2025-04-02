@@ -110,9 +110,9 @@ set -x
 down_servers=()
 up_servers=()
 get_servers 1>&3 2>&1
-sleep 1
+sleep 15
 subscribe_all
-
+sleep 15
 mkfifo "$rundir/peep"
 peeping-tom "$totalservers" "$updistribution" "$downdistribution" "$honkdistribution" &
 
