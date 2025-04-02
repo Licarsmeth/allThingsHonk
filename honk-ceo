@@ -63,7 +63,7 @@ done
 # shellcheck source=activate
 . ~/allthingshonk/activate
 trap 'cleanup' EXIT
-set -x
+
 while (( downdist<90 || updist>10 )); do
     if (( downdist < 90 )); then
 	downdist=$(( downdist + downincrement ));
@@ -74,5 +74,5 @@ while (( downdist<90 || updist>10 )); do
     	if (( updist < 10 )); then break; fi
     fi
     honk-manage purge-all
-    honk-manager "$totalservers" "$downdist" "$updist" 60 3 "$maxrun" || exit 1
+    honk-manager -t "$totalservers" -D "$downdist" -U "$updist" -m "$maxrun" || exit 1
 done
