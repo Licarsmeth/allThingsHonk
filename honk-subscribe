@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# shellcheck source=honk-manage.conf
+. ~/allthingshonk/honk-manage.conf
+
+usage(){
+    cat >&2
+    exit 1
+}<<EOF
+honk-subscribe myDomain myUser url
+url is remote_domain/u/remote_user
+EOF
+
+if (( $# != 3 )); then
+    usage
+fi
+
+
+domain=$1
+username=$2
+url=$3
+
+csrf=$(honk-login "$domain" "$username" "/honkers")
+set -x
+
+CURL -iF "url=$url" "https://$domain/submithonker"
