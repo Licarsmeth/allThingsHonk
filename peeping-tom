@@ -1,6 +1,5 @@
 #!/bin/bash
 . ~/allthingshonk/honk-manage.conf
-db="$rundir/stats_$(date '+%Y-%m-%d-%H:%M:%S')_$machine.db"
 peepfile=$rundir/peep
 usage(){
     cat >&2
@@ -93,10 +92,12 @@ rcpt(){
 select '%s', '%s', rcpt, count(*) from $doovers group by rcpt;\n" "$run" "$i"
     done
 }
-
+up_dist=up_dist
+down_dist=down_dist
+db="$rundir/stats_$(date '+%m-%d-%H:%M')_up_${up_dist}_down_${down_dist}_$machine.db"
 if [[ $# != 4 ]]; then usage; fi
 servers=$1 up_dist=$2 down_dist=$3 honk_dist=$4
-
+db="$rundir/stats_$(date '+%m-%d-%H:%M')_up_${up_dist}_down_${down_dist}_$machine.db"
 {
     if ! [[ -f "$db" ]]; then
 	create_tables
