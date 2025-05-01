@@ -87,7 +87,7 @@ case $1 in
 	;;
 esac
 
-
+# shellcheck source=honk-manage.conf
 . ~/allthingshonk/honk-manage.conf
 datadir="$datadir/$port"
 task=$1

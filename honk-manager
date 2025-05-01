@@ -71,6 +71,7 @@ cleanup(){
     declare -p up_servers
     pkill --exact honk
     pkill --exact honk-servers
+    wait
 }
 
 while getopts "t:m:h:H:U:D:" opt; do

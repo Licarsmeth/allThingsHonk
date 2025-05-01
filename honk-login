@@ -22,7 +22,7 @@ fi
 domain=$1
 username=$2
 password=$username
-if [[ $domain =~ *"://"* ]]; then
+if [[ $domain = *"://"* ]]; then
     die "domain can't contian scheme://"
 fi
 shift 2

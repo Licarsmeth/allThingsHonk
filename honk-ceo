@@ -51,17 +51,34 @@ while getopts 'm:d:u:t:D:U:' opt; do
 	    updecrement=$OPTARG
 	;;
 	"?")
-	    usage
+	    usage "unknown arg"
 	    ;;
 	*)
-	    printf '%s\n' "impossible" >&2
-	    usage
+	    usage "impossible"
 	    ;;
     esac
 done
 
+start-all(){
+    set -x
+    for i in "${ssh_machines[@]}"; do
+	ssh "$i" bash -e <<EOF
+set -x
+cd \$HOME/allthingshonk/ || exit 1
+pwd
+. activate
+honk-manage purge-all || exit 1
+honk-manager -t $totalservers -D $downdist -U $updist -m $maxrun || exit 1
+EOF
+    done
+    set +x
+}
+
 # shellcheck source=activate
 . ~/allthingshonk/activate
+#shellcheck source=honk-manage.conf
+. honk-manage.conf
+
 trap 'cleanup' EXIT
 
 while (( downdist<90 || updist>10 )); do
@@ -73,6 +90,5 @@ while (( downdist<90 || updist>10 )); do
     	updist=$(( updist - updecrement ));
     	if (( updist < 10 )); then break; fi
     fi
-    honk-manage purge-all
-    honk-manager -t "$totalservers" -D "$downdist" -U "$updist" -m "$maxrun" || exit 1
+    start-all
 done

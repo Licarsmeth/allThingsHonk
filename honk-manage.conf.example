@@ -3,6 +3,7 @@ datadir="$HOME/honk"
 viewdir="$HOME/honk-0.9.8"
 rundir="$HOME/allthingshonk"
 allmachines=("gentoo" "nuc" "bikalpa")
+ssh_machines=("me@gentoo" "bikalpa@nuc" "licar@bikalpa.lan")
 machine="gentoo"
 mkdir -p "$rundir"
 
