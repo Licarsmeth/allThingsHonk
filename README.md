@@ -4,6 +4,7 @@
 
 This repo contains scripts and experiments demonstrating how server outages in decentralized ActivityPub (Fediverse) networks create DDoS-like effects through retry overloads. Tracks "tries" (delivery attempts) during simulated failures.
 
+[Overview](#references)
 
 ## Overview
 
